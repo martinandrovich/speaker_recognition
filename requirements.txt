@@ -1,0 +1,4 @@
+numpy==1.21.2
+sounddevice==0.4.4
+torch==1.10.1
+torchaudio==0.10.1
