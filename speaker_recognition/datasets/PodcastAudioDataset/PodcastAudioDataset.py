@@ -13,23 +13,25 @@ class PodcastAudioDataset(Dataset):
 
 	# https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 
+	LABELS = { "Esben": 0, 0: "Esben", "Peter": 1, 1: "Peter" }
+
 	def __init__(self, split="all", transform=None, target_transform=None, **kwargs):
 
 		# load data
+		self.split = split
 		self.dir_data =  os.path.dirname(os.path.realpath(__file__)) + "/data" # absolute path to data
 		self.max_dur = 5000; # [ms]
-		self.labels = { "Esben": 0, "Peter": 1 }
 		self.files = (
-			[(file, self.labels["Esben"]) for file in glob.glob(self.dir_data + "/1_esben/*.wav")] +
-			[(file, self.labels["Peter"]) for file in glob.glob(self.dir_data + "/2_peter/*.wav")]
+			[(file, self.LABELS["Esben"]) for file in glob.glob(self.dir_data + "/1_esben/*.wav")] +
+			[(file, self.LABELS["Peter"]) for file in glob.glob(self.dir_data + "/2_peter/*.wav")]
 		)
 
 		# split dataset
-		if range := { "train": (0.0, 0.8), "validation": (0.8, 0.9), "test": (0.9, 1.0) }.get(split):
+		if range := { "train": (0.0, 0.6), "validation": (0.6, 0.8), "test": (0.8, 1.0) }.get(split):
 			l = self.files
 			l = list(chain.from_iterable(zip(l[:len(l)//2], l[len(l)//2:]))) # alternate list shuffle (0,1,0,1,...)
 			self.files = l[int(len(l) * range[0]) : int(len(l) * range[1])] # splice by percent given by 'range'
-		
+
 		# extra transforms
 		self.transform = transform
 		self.target_transform = target_transform
@@ -43,15 +45,15 @@ class PodcastAudioDataset(Dataset):
 		# set dataset length (based on number of divisions)
 		self.len = len(self.files) * self.num_divs
 
-		print(f"Loaded PodcastAudioDataset ({split}) from: {self.dir_data}")
-		
+		# print(f"Loaded PodcastAudioDataset ({split}) from: {self.dir_data}")
+
 	def sample_size(self):
 		return self[0][0].size()
 
 	def __len__(self):
 		return self.len
 
-	def __getitem__(self, idx):
+	def get_file_and_label(self, idx):
 
 		if not idx in range(0, self.len):
 			raise IndexError()
@@ -60,12 +62,19 @@ class PodcastAudioDataset(Dataset):
 		idx_file = idx // self.num_divs
 		idx_sample = idx % self.num_divs
 
+		return self.files[idx_file][0], self.files[idx_file][1], idx_sample # (file, label, idx_sample)
+
+	def get_wav_sample(self, idx):
+
+		file, label, _ = self.get_file_and_label(idx)
+		return torchaudio.load(file) # (waveform, sample_rate)
+
+	def __getitem__(self, idx):
+
 		# load data
-		file = self.files[idx_file][0]; label = self.files[idx_file][1]
-		waveform, sample_rate = torchaudio.load(file)
+		file, label, idx_sample = self.get_file_and_label(idx)
+		waveform, sample_rate = self.get_wav_sample(idx)
 		dur = waveform.size()[1] / sample_rate * 1000
-		
-		# print(file, self.sample_rate, label)
 
 		# -------------------------------------------------------------------------
 
@@ -89,7 +98,9 @@ class PodcastAudioDataset(Dataset):
 		# augmentation (time domain)
 
 		if "time_shift" in self.augments:
-			pass
+			_, sig_len = waveform.shape
+			shift_amt = int(random.random() * 0.4 * sig_len)
+			waveform = waveform.roll(shift_amt)
 
 		# -------------------------------------------------------------------------
 
@@ -97,9 +108,9 @@ class PodcastAudioDataset(Dataset):
 
 		if self.mel_spec:
 
-			spec = torchaudio.transforms.MelSpectrogram(self.sample_rate, n_fft=1024, hop_length=None, n_mels=64)(waveform)
+			spec = torchaudio.transforms.MelSpectrogram(self.sample_rate, n_fft=1024, n_mels=64, hop_length=None)(waveform)
 			spec = torchaudio.transforms.AmplitudeToDB(top_db=80)(spec)
-			
+
 			# augmentation (frequency domain)
 
 			if "spec_augment" in self.augments:
@@ -117,7 +128,7 @@ class PodcastAudioDataset(Dataset):
 
 		# -------------------------------------------------------------------------
 
-		return (spec if self.mel_spec else waveform, label)
+		return (spec if self.mel_spec else waveform, label, idx)
 
 def resize_waveform(waveform, max_ms, sample_rate):
 
@@ -142,7 +153,7 @@ def resize_waveform(waveform, max_ms, sample_rate):
 		waveform = torch.cat((pad_begin, waveform, pad_end), 1)
 
 	return waveform
-	
+
 def spec_augment(spec, max_mask_pct=0.1, n_freq_masks=1, n_time_masks=1):
 
 	_, n_mels, n_steps = spec.shape
