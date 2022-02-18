@@ -54,7 +54,7 @@ def epoch(model, dataloder, criterion, optimizer=None):
 
 	return np.mean(losses), num_correct_pred/num_pred # (avg_loss, accuracy)
 
-def train_model(model, dataloaders, num_epochs, criterion, optimizer=None, print_progress=True):
+def train_model(model, dataloaders, num_epochs, criterion, optimizer=None, early_stopping=True, print_progress=True):
 
 	# Stat = namedtuple("Stat", ["loss", "accuracy"])
 	
@@ -74,18 +74,26 @@ def train_model(model, dataloaders, num_epochs, criterion, optimizer=None, print
 			print(f"Epoch: {i+1:02d}/{num_epochs}, Loss (train/val): {stats_train[i][0]:.2f}/{stats_val[i][0]:.2f}, Accuracy (train/val): {stats_train[i][1]:.2f}/{stats_val[i][1]:.2f}")
 		
 	return stats_train, stats_val
-
+	
 def plot_train_history(stats):
 	
 	stats_train, stats_val = stats
 	loss_train, acc_train = zip(*stats_train)
 	loss_val, acc_val = zip(*stats_val)
 	
-	fig = plt.figure()
-	
+	fig = plt.figure(figsize=(10, 5), dpi=300)
+
+	plt.subplot(1, 2, 1)
 	plt.plot(acc_train)
 	plt.plot(acc_val)
 	plt.xlabel("Epoch"); plt.ylabel("Accuracy [%]")
+	plt.legend(["Train", "Validation"])
+	plt.grid()
+	
+	plt.subplot(1, 2, 2)
+	plt.plot(loss_train)
+	plt.plot(loss_val)
+	plt.xlabel("Epoch"); plt.ylabel("Loss")
 	plt.legend(["Train", "Validation"])
 	plt.grid()
 	
@@ -93,10 +101,11 @@ def plot_train_history(stats):
 	
 	return fig
 	
-def log_results(model, stats, fig=None, dir=None):
+def log_results(model, stats, fig=None, id=None, dir=None):
 	
 	if not dir:
-		dir = f"./logs/{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+		id = id if id else datetime.now().strftime('%Y%m%d_%H%M%S')
+		dir = f"./logs/{id}"
 		os.makedirs(dir)
 	
 	model_summary = summary(model, input_size=model.batch_shape)
@@ -108,4 +117,4 @@ def log_results(model, stats, fig=None, dir=None):
 		fig.savefig(f"{dir}/train_history.svg")
 		fig.savefig(f"{dir}/train_history.png", dpi=300)
 	
-	print(f"saved model data to {dir}")
+	# print(f"saved model data to {dir}")
