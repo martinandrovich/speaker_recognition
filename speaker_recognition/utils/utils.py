@@ -1,8 +1,12 @@
+import os
 import torch
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
+from torchinfo import summary
 from collections import namedtuple
+from datetime import datetime
+from pprint import pprint
 
 def est_output_shape(batch_shape, layers):
 
@@ -87,4 +91,21 @@ def plot_train_history(stats):
 	
 	plt.show()
 	
-	pass
+	return fig
+	
+def log_results(model, stats, fig=None, dir=None):
+	
+	if not dir:
+		dir = f"./logs/{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+		os.makedirs(dir)
+	
+	model_summary = summary(model, input_size=model.batch_shape)
+	torch.save(model, f"{dir}/model.pt")
+	print(model_summary, file=open(f"{dir}/model.txt", "a", encoding="utf-8"))
+	pprint(stats, stream=open(f"{dir}/stats.txt", "a", encoding="utf-8"))
+	
+	if fig:
+		fig.savefig(f"{dir}/train_history.svg")
+		fig.savefig(f"{dir}/train_history.png", dpi=300)
+	
+	print(f"saved model data to {dir}")
