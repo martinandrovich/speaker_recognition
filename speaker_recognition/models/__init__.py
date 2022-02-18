@@ -2,4 +2,5 @@
 # import speaker_recognition.models
 # from speaker_recognition.models import SpeechRecognitionNet, ...
 
-from .model import SpeechRecognitionNet
+# from .model import SpeechRecognitionNet
+from .model import *
