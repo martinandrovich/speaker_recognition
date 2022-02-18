@@ -14,6 +14,7 @@ class PodcastAudioDataset(Dataset):
 	# https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 
 	LABELS = { "Esben": 0, 0: "Esben", "Peter": 1, 1: "Peter" }
+	SPLITS = { "train": (0.0, 0.6), "validation": (0.6, 0.8), "test": (0.8, 1.0) }
 
 	def __init__(self, split="all", transform=None, target_transform=None, **kwargs):
 
@@ -27,7 +28,7 @@ class PodcastAudioDataset(Dataset):
 		)
 
 		# split dataset
-		if range := { "train": (0.0, 0.6), "validation": (0.6, 0.8), "test": (0.8, 1.0) }.get(split):
+		if range := self.SPLITS.get(split):
 			l = self.files
 			l = list(chain.from_iterable(zip(l[:len(l)//2], l[len(l)//2:]))) # alternate list shuffle (0,1,0,1,...)
 			self.files = l[int(len(l) * range[0]) : int(len(l) * range[1])] # splice by percent given by 'range'
@@ -98,9 +99,7 @@ class PodcastAudioDataset(Dataset):
 		# augmentation (time domain)
 
 		if "time_shift" in self.augments:
-			_, sig_len = waveform.shape
-			shift_amt = int(random.random() * 0.4 * sig_len)
-			waveform = waveform.roll(shift_amt)
+			waveform = timeshift_augment(waveform)
 
 		# -------------------------------------------------------------------------
 
@@ -153,6 +152,15 @@ def resize_waveform(waveform, max_ms, sample_rate):
 		waveform = torch.cat((pad_begin, waveform, pad_end), 1)
 
 	return waveform
+
+def timeshift_augment(waveform):
+
+	_, sig_len = waveform.shape
+	shift_amt = int(random.random() * 0.4 * sig_len)
+	waveform = waveform.roll(shift_amt)
+
+	return waveform
+
 
 def spec_augment(spec, max_mask_pct=0.1, n_freq_masks=1, n_time_masks=1):
 
