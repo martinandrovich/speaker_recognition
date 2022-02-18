@@ -14,7 +14,8 @@ class PodcastAudioDataset(Dataset):
 	# https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 
 	LABELS = { "Esben": 0, 0: "Esben", "Peter": 1, 1: "Peter" }
-	SPLITS = { "train": (0.0, 0.6), "validation": (0.6, 0.8), "test": (0.8, 1.0) }
+	# SPLITS = { "train": (0.0, 0.6), "validation": (0.6, 0.8), "test": (0.8, 1.0) }
+	SPLITS = { "train": (0.0, 0.4), "validation": (0.4, 0.8), "test": (0.8, 1.0) }
 
 	def __init__(self, split="all", transform=None, target_transform=None, **kwargs):
 
