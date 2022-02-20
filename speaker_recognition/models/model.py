@@ -23,17 +23,17 @@ class SpeechRecognitionNet(nn.Module):
 		# b = batches, c = channels, h = height, w = width
 
 		self.conv1 = nn.Sequential(
-			nn.Conv2d(in_channels=1, out_channels=2, kernel_size=5, stride=1, padding=2),
+			nn.Conv2d(in_channels=1, out_channels=2, kernel_size=5, stride=1, padding=1),
 			nn.MaxPool2d(kernel_size=2, stride=2),
 			nn.ReLU(),
-			# nn.BatchNorm2d(2)
+			nn.BatchNorm2d(2)
 		)
 
 		self.conv2 = nn.Sequential(
 			nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, stride=1, padding=1),
 			nn.MaxPool2d(kernel_size=2, stride=2),
 			nn.ReLU(),
-			# nn.BatchNorm2d(4),
+			nn.BatchNorm2d(4),
 		)
 
 		# size of the conv layers output
@@ -53,15 +53,17 @@ class SpeechRecognitionNet(nn.Module):
 		# print("conv_output_shape:", conv_output_shape, num_flat_layers)
 
 		self.fc1 = nn.Sequential(
+			# nn.Dropout(p=0.8),
 			nn.Linear(num_flat_layers, num_flat_layers//2),
 			nn.ReLU(),
-			# nn.BatchNorm1d(num_flat_layers//2)
+			nn.BatchNorm1d(num_flat_layers//2)
 		)
 
 		self.fc2 = nn.Sequential(
+			# nn.Dropout(p=0.5),
 			nn.Linear(num_flat_layers//2, num_flat_layers//4),
 			nn.ReLU(),
-			# nn.BatchNorm1d(num_flat_layers//4)
+			nn.BatchNorm1d(num_flat_layers//4)
 		)
 
 		self.fc3 = nn.Sequential(
