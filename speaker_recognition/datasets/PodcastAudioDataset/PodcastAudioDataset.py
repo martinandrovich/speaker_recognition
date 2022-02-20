@@ -14,7 +14,6 @@ class PodcastAudioDataset(Dataset):
 	# https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 
 	LABELS = { "Esben": 0, 0: "Esben", "Peter": 1, 1: "Peter" }
-	# SPLITS = { "train": (0.0, 0.6), "validation": (0.6, 0.8), "test": (0.8, 1.0) }
 	SPLITS = { "train": (0.0, 0.4), "validation": (0.4, 0.8), "test": (0.8, 1.0) }
 
 	def __init__(self, split="all", transform=None, target_transform=None, **kwargs):
@@ -89,6 +88,9 @@ class PodcastAudioDataset(Dataset):
 		# fix length of waveform
 		if dur != self.max_dur:
 			waveform = resize_waveform(waveform, self.max_dur, self.sample_rate)
+			
+		# normalize
+		waveform = (waveform - waveform.mean()) / waveform.std()
 
 		# sub-sample
 		if self.num_divs > 1:
@@ -154,14 +156,13 @@ def resize_waveform(waveform, max_ms, sample_rate):
 
 	return waveform
 
-def timeshift_augment(waveform):
+def timeshift_augment(waveform, shift_limit=0.4):
 
 	_, sig_len = waveform.shape
-	shift_amt = int(random.random() * 0.4 * sig_len)
-	waveform = waveform.roll(shift_amt)
+	shift_amount = int(random.random() * shift_limit * sig_len)
+	waveform_aug = waveform.roll(shift_amount)
 
-	return waveform
-
+	return waveform_aug
 
 def spec_augment(spec, max_mask_pct=0.1, n_freq_masks=1, n_time_masks=1):
 
