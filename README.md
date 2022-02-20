@@ -12,4 +12,4 @@ python -m pip install -e .
 
 ## Usage
 
-After installing, run the demo script as `python ./demo.py` from the root directory, or use the Jupyter notebooks in the `test/` directory.
+After installing, run the demo script as `python ./demo.py` from the root directory, or use the Jupyter notebooks in the `tests/` directory.
